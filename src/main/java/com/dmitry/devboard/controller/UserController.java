@@ -1,8 +1,10 @@
 package com.dmitry.devboard.controller;
 
 import com.dmitry.devboard.dto.CreateUserRequest;
+import com.dmitry.devboard.dto.TaskResponse;
 import com.dmitry.devboard.dto.UpdateUserRequest;
 import com.dmitry.devboard.dto.UserResponse;
+import com.dmitry.devboard.service.TaskService;
 import com.dmitry.devboard.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,9 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+
+    private final TaskService taskService;
+
     @PostMapping
     public UserResponse saveUser(@Valid @RequestBody CreateUserRequest request){
         return userService.createUser(request);
@@ -38,6 +43,11 @@ public class UserController {
     @GetMapping
     public List<UserResponse> getAllUsers(){
         return userService.getAllUsers();
+    }
+
+    @GetMapping("{id}/tasks")
+    public List<TaskResponse> getByUserId(@PathVariable Long id){
+        return taskService.getByUserId(id);
     }
 
 }
