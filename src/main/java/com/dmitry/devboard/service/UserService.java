@@ -8,6 +8,7 @@ import com.dmitry.devboard.exception.UserAlreadyExistsException;
 import com.dmitry.devboard.exception.UserNotFoundException;
 import com.dmitry.devboard.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,13 +18,14 @@ import java.util.Optional;
 @RequiredArgsConstructor
     public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
 
     public UserResponse createUser(CreateUserRequest request){
         User user = new User();
         user.setEmail(request.getEmail());
         user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         if(userRepository.findByEmail(user.getEmail()).isPresent()){
             throw new UserAlreadyExistsException("Email пользователя уже занят");
         }
