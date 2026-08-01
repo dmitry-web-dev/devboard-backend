@@ -1,6 +1,7 @@
 package com.dmitry.devboard.controller;
 
 import com.dmitry.devboard.dto.LoginRequest;
+import com.dmitry.devboard.dto.LoginResponse;
 import com.dmitry.devboard.dto.RegisterRequest;
 import com.dmitry.devboard.dto.UserResponse;
 import com.dmitry.devboard.service.AuthService;
@@ -24,7 +25,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public UserResponse authUser(@Valid @RequestBody LoginRequest request){
+    public LoginResponse authUser(@Valid @RequestBody LoginRequest request){
         return authService.authUser(request);
     }
 
