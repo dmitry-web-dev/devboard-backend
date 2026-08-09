@@ -13,8 +13,13 @@ import com.dmitry.devboard.repository.TaskRepository;
 import com.dmitry.devboard.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+
 import java.util.List;
 
 @Service
@@ -25,7 +30,7 @@ public class TaskService {
 
     public TaskResponse createTask(CreateTaskRequest request){
         Task task = new Task();
-        User user = userRepository.findById(request.getUserId()).orElseThrow(() -> new UserNotFoundException("Пользователь с id " + request.getUserId() + " не найден"));
+        User user = getCurrentUser();
         task.setUser(user);
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
@@ -36,30 +41,39 @@ public class TaskService {
     }
 
     public TaskResponse getTaskById(Long id){
+        User user = getCurrentUser();
         Task task = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException("Задача с id: " + id + " не найдена"));
+        if(!user.getId().equals(task.getUser().getId())){
+            throw new AccessDeniedException("Ошибка доступа");
+        }
         return new TaskResponse(task.getId(), task.getTitle(), task.getDescription(),task.getStatus() ,task.getCreatedAt());
     }
     
-    public List<TaskResponse> getAllTasks(){
-        return taskRepository.findAll()
-                .stream()
-                .map(task -> new TaskResponse(task.getId(), task.getTitle(), task.getDescription(), task.getStatus(), task.getCreatedAt()))
-                .toList();
+    public Page<TaskResponse> getUserTasks(Pageable pageable){
+        User user = getCurrentUser();
+        return taskRepository.findByUser(user, pageable)
+                .map(task -> new TaskResponse(task.getId(), task.getTitle(), task.getDescription(), task.getStatus(), task.getCreatedAt()));
     }
 
     public TaskResponse updateTask(Long id, UpdateTaskRequest request){
-        Task task = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException("Задача с id: " + id + " не найдена"));
-        task.setTitle(request.getTitle());
-        task.setDescription(request.getDescription());
-        taskRepository.save(task);
-        return new TaskResponse(task.getId(), task.getTitle(), task.getDescription(), task.getStatus(), task.getCreatedAt());
+        User user = getCurrentUser();
+        Task currTask = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException("Задача с id: " + id + " не найдена"));
+        if(!currTask.getUser().getId().equals(user.getId())){
+            throw new AccessDeniedException("Неккоректный айди пользователя");
+        }
+        currTask.setTitle(request.getTitle());
+        currTask.setDescription(request.getDescription());
+        taskRepository.save(currTask);
+        return new TaskResponse(currTask.getId(), currTask.getTitle(), currTask.getDescription(), currTask.getStatus(), currTask.getCreatedAt());
     }
 
     public void deleteTask(Long id){
-        if(taskRepository.findById(id).isEmpty()){
-            throw new TaskNotFoundException("Задача с id: " + id + " не найдена");
+        User currUser = getCurrentUser();
+        Task currTask = taskRepository.findById(id).orElseThrow(() -> new TaskNotFoundException("Задача с id: " + id + " не найдена"));
+        if(!currUser.getId().equals(currTask.getUser().getId())){
+            throw new AccessDeniedException("Ошибка доступа");
         }
-        taskRepository.deleteById(id);
+        taskRepository.delete(currTask);
     }
 
     public List<TaskResponse> getByUserId(Long id){
@@ -84,14 +98,23 @@ public class TaskService {
         );
     }
 
-    public List<TaskResponse> getByStatus(TaskStatus status){
-        return taskRepository.findByStatus(status).stream()
-                .map(task -> new TaskResponse(task.getId(), task.getTitle(), task.getDescription(), task.getStatus(), task.getCreatedAt()))
-                .toList();
+    public Page<TaskResponse> getByStatus(TaskStatus status, Pageable pageable){
+        User user = getCurrentUser();
+        return taskRepository.findByUserAndStatus(user ,status, pageable)
+                .map(task -> new TaskResponse(task.getId(), task.getTitle(), task.getDescription(), task.getStatus(), task.getCreatedAt()));
     }
 
     public Page<TaskResponse> getPages(Pageable pageable){
-        return taskRepository.findAll(pageable)
+        User user = getCurrentUser();
+        return taskRepository.findByUser(user, pageable)
                 .map(task -> new TaskResponse(task.getId(), task.getTitle(), task.getDescription(), task.getStatus(), task.getCreatedAt()));
+    }
+
+    private User getCurrentUser(){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || authentication.getPrincipal() == null){
+             throw new AuthenticationCredentialsNotFoundException("Ошибка аунтетификации");
+        }
+        return (User) authentication.getPrincipal();
     }
 }

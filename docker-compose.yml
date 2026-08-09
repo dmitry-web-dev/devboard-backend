@@ -1,17 +1,15 @@
 services:
-
   postgres:
     image: postgres:16
     container_name: devboard-postgres
     environment:
-      POSTGRES_DB: devboard
-      POSTGRES_USER: devboard_user
-      POSTGRES_PASSWORD: devboard_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
 
 volumes:
   postgres_data:

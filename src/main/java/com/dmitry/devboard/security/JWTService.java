@@ -24,12 +24,14 @@ public class JWTService {
     public String generateToken(User user){
         Date nowTime = new Date();
         Date expirationTime = new Date(nowTime.getTime() + expiration);
-        return Jwts.builder()
+
+        String token = Jwts.builder()
                 .subject(user.getEmail())
                 .issuedAt(nowTime)
                 .expiration(expirationTime)
                 .signWith(getSignInKey())
                 .compact();
+        return token;
     }
 
     private SecretKey getSignInKey(){

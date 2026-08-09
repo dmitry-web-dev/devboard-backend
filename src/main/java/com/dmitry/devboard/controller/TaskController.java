@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.web.PageableDefault;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -50,16 +49,15 @@ public class TaskController {
     }
 
     @GetMapping
-    public List<TaskResponse> getAllOrFilteredTasks(@RequestParam(required = false) TaskStatus status){
+    public Page<TaskResponse> getAllOrFilteredTasks(@RequestParam(required = false) TaskStatus status, Pageable pageable){
         if(status == null){
-            return taskService.getAllTasks();
+            return taskService.getUserTasks(pageable);
         }
-        return taskService.getByStatus(status);
+        return taskService.getByStatus(status, pageable);
     }
 
     @GetMapping("/pages")
     public Page<TaskResponse> getPages(@PageableDefault(size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable){
         return taskService.getPages(pageable);
     }
-
 }
